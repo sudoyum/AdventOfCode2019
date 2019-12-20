@@ -41,7 +41,7 @@ makeListFromRange x1 x2
 
 makeSegList :: [String] -> Int -> Int -> Int -> Int -> [WireSeg]
 makeSegList wireDefList startX startY index dist
-    | index == (length wireDefList -1) = [doSeg]
+    | index == (length wireDefList - 1) = [doSeg]
     | otherwise =  [doSeg] ++ doNextSeg
     where doSeg     =  doSegment (wireDefList !! index) startX startY dist
           doNextSeg =  makeSegList wireDefList (xEnd doSeg) (yEnd doSeg) (index + 1) (dist + (tDist doSeg))
@@ -51,32 +51,54 @@ findSmallestDist inputPoints = minimum (map manhattanDistOrig inputPoints)
 
 getIntersectPoint :: WireSeg -> WireSeg -> Point
 getIntersectPoint seg1 seg2 = do
-    let x1s = makeListFromRange (xStart seg1) (xEnd seg1)
-    let x2s = makeListFromRange (xStart seg2) (xEnd seg2)
-    let y1s = makeListFromRange (yStart seg1) (yEnd seg1)
-    let y2s = makeListFromRange (yStart seg2) (yEnd seg2)
-    let matchingP = [(x1, y1) | x1<-x1s, x2<-x2s, y1<-y1s, y2<-y2s, x1==x2, y1==y2]
-    if length matchingP > 0 then do
-        Point { x = (fst (head matchingP)), y = (snd (head matchingP)) }
+    if (deltaX seg1) && not(deltaX seg2) then do
+        Point { x = (xEnd seg2), y = (yEnd seg1) }
     else
-        Point { x = 0, y = 0 }
+        Point { x = (xEnd seg1), y = (yEnd seg2) }
 
-{-
-findIntersectingPoints :: WireSeg -> WireSeg -> Point
-findIntersectingPoints seg1 seg2
-    | trace ("inrange=" ++ show (yInRange && xInRange)) False = undefined
-    | intersect = getIntersectPoint seg1 seg2 
-    | otherwise = Point { x = 0, y = 0 }
-    where seg2XRange = makeListFromRange (xStart seg2) (xEnd seg2)
-          seg2YRange = makeListFromRange (yStart seg2) (yEnd seg2)
-          intersect = ((seg1 deltaX) && (seg2 y `elem` seg2XRange) || (not(seg1 deltaX) && 
--}
-         
+
+isInRange :: Int -> Int -> Int -> Bool
+isInRange val limit1 limit2
+    | limit1 == limit2 = val == limit1
+    | limit2 > limit1 = (val <= limit2) && (val >= limit1)
+    | limit2 < limit1 = (val <= limit1) && (val >= limit2)
+
+
+hasIntersectingPoint :: WireSeg -> WireSeg -> Bool
+hasIntersectingPoint seg1 seg2 = do
+    let seg1xRange = isInRange (xEnd seg2) (xStart seg1) (xEnd seg1)
+    let seg2yRange = isInRange (yEnd seg1) (yStart seg2) (yEnd seg2)
+
+    let seg2xRange = isInRange (xEnd seg1) (xStart seg2) (xEnd seg2)
+    let seg1yRange = isInRange (yEnd seg2) (yStart seg1) (yEnd seg1)
+
+    if (deltaX seg1) && not(deltaX seg2) then do
+        seg1xRange && seg2yRange
+    else if (deltaX seg2) && not(deltaX seg1) then do
+        seg2xRange && seg1yRange
+    else
+        False
+
+
+doAllIntersectingPoints :: [(WireSeg, WireSeg)] -> Int -> [Point]
+doAllIntersectingPoints segsList index
+     | index == (length segsList - 1) = retList
+     | otherwise =  retList ++ (doAllIntersectingPoints segsList nextIndex)
+     where nextIndex = index + 1
+           seg1      = fst segPair
+           seg2      = snd segPair
+           segPair   = segsList !! index
+           hasIntersect = hasIntersectingPoint seg1 seg2
+           retList = if hasIntersect then [getIntersectPoint seg1 seg2] else []
+
+crossingSegs :: WireSeg -> WireSeg -> Bool
+crossingSegs sls1 sls2 =
+    ((deltaX sls1) && not(deltaX sls2)) || ((deltaX sls2) && not(deltaX sls1))
 
 findAllIntersectingPoints :: [WireSeg] -> [WireSeg] -> [Point]
 findAllIntersectingPoints segList1 segList2 =  do
-      let unfiltList = [(getIntersectPoint sls1 sls2) | sls1<-segList1, sls2<-segList2] 
-      --let unfiltList = [(findIntersectionPoints sls1 sls2) | sls1<-segList1, sls2<-segList2] 
+      let allCombinations = [ (sls1, sls2) | sls1<-segList1, sls2<-segList2, crossingSegs sls1 sls2 ]
+      let unfiltList = doAllIntersectingPoints allCombinations 0
       [pList | pList<-unfiltList, not((x pList) == 0 && (y pList) == 0)]
 
 
@@ -118,9 +140,15 @@ main = do
                 putStrLn(show (xEnd testSeg1))
                 putStrLn(show (x1s))
                 --putStrLn(show (getIntersectPoint testSeg1 testSeg2))
-                
+                putStrLn ( show ( isInRange 4 7 (-7)))
+                putStrLn ( show ( isInRange 10 7 (-7)))
+                let testSeg1 = doSegment "L4" 6 3 0
+                let testSeg2 = doSegment "D4" 3 6 0
+                let testSeg3 = doSegment "R4" 1 1 0
+                let testSeg4 = doSegment "D4" 7 3 0
+                putStrLn ( show ( hasIntersectingPoint testSeg1 testSeg2))
+                putStrLn ( show ( hasIntersectingPoint testSeg3 testSeg4))
             else do
-                --findAllIntersectingPoints segList1 segList2 =  do
                 let segList1 = makeSegList wire1 originX originY 0 0
                 let segList2 = makeSegList wire2 originX originY 0 0
                 putStrLn(show (findSmallestDist (findAllIntersectingPoints segList1 segList2)))
