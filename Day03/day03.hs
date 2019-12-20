@@ -13,9 +13,16 @@ data WireSeg = WireSeg { deltaX :: Bool
                        , tDist   :: Int
                        } deriving (Eq, Show)
 
-data Point   = Point { x :: Int
-                     , y :: Int
-                     } deriving (Show)
+xSegDist :: WireSeg -> Int
+xSegDist seg = abs((xEnd seg) - (xStart seg))
+
+ySegDist :: WireSeg -> Int
+ySegDist seg = abs((yEnd seg) - (yStart seg))
+
+data Point = Point { x :: Int
+                   , y :: Int
+                   , totDist :: Int
+                   } deriving (Show)
 
 manhattanDist :: Point -> Point -> Int
 manhattanDist p1 p2 = abs ((x p1) - (x p2)) + abs ((y p1) - (y p2))
@@ -44,17 +51,22 @@ makeSegList wireDefList startX startY index dist
     | index == (length wireDefList - 1) = [doSeg]
     | otherwise =  [doSeg] ++ doNextSeg
     where doSeg     =  doSegment (wireDefList !! index) startX startY dist
-          doNextSeg =  makeSegList wireDefList (xEnd doSeg) (yEnd doSeg) (index + 1) (dist + (tDist doSeg))
+          doNextSeg =  makeSegList wireDefList (xEnd doSeg) (yEnd doSeg) (index + 1) (tDist doSeg)
 
 findSmallestDist :: [Point] -> Int
 findSmallestDist inputPoints = minimum (map manhattanDistOrig inputPoints)
 
+findShortestPath :: [Point] -> Int
+findShortestPath inputPoints = minimum (map totDist inputPoints)
+
 getIntersectPoint :: WireSeg -> WireSeg -> Point
 getIntersectPoint seg1 seg2 = do
     if (deltaX seg1) && not(deltaX seg2) then do
-        Point { x = (xEnd seg2), y = (yEnd seg1) }
-    else
-        Point { x = (xEnd seg1), y = (yEnd seg2) }
+        let totalDist = (tDist seg1) + (tDist seg2) - abs(xEnd seg1 - xEnd seg2) - abs(yEnd seg2 - yEnd seg1)
+        Point { x = (xEnd seg2), y = (yEnd seg1), totDist = totalDist }
+    else do
+        let totalDist = (tDist seg1) + (tDist seg2) - abs(xEnd seg2 - xEnd seg1) - abs(yEnd seg1 - yEnd seg2)
+        Point { x = (xEnd seg1), y = (yEnd seg2), totDist = totalDist }
 
 
 isInRange :: Int -> Int -> Int -> Bool
@@ -110,7 +122,7 @@ main = do
     else do
         handle <- openFile (head args) ReadMode
         contents <- hGetContents handle
-        --let doTest = True
+
         let doTest = False
         let splitLines = lines contents
         let dayVal = args !! 1
@@ -121,11 +133,14 @@ main = do
         let originX = 0
         let originY = 0
         
+        let segList1 = makeSegList wire1 originX originY 0 0
+        let segList2 = makeSegList wire2 originX originY 0 0
+
         if dayVal == "p1" then do 
             if doTest then do
-                let testPoint1 = Point { x = 21, y = 28}
-                let testPoint2 = Point { x = 17, y = 49 }
-                let testPoint3 = Point { x = 7, y = 16}
+                let testPoint1 = Point { x = 21, y = 28, totDist = 0 }
+                let testPoint2 = Point { x = 17, y = 49, totDist = 0 }
+                let testPoint3 = Point { x = 7, y = 16, totDist = 0 }
                 let testPointList = [testPoint1, testPoint2, testPoint3]
                 -- Expect 25
                 putStrLn(show (manhattanDist testPoint1 testPoint2))
@@ -149,14 +164,12 @@ main = do
                 putStrLn ( show ( hasIntersectingPoint testSeg1 testSeg2))
                 putStrLn ( show ( hasIntersectingPoint testSeg3 testSeg4))
             else do
-                let segList1 = makeSegList wire1 originX originY 0 0
-                let segList2 = makeSegList wire2 originX originY 0 0
                 putStrLn(show (findSmallestDist (findAllIntersectingPoints segList1 segList2)))
-        else if dayVal == "p2" then
-            putStrLn dayVal
+        else if dayVal == "p2" then do
+            putStrLn(show (findShortestPath (findAllIntersectingPoints segList1 segList2)))
         else if dayVal == "both" then do
-            putStrLn dayVal
-            putStrLn dayVal
+            putStrLn(show (findSmallestDist (findAllIntersectingPoints segList1 segList2)))
+            putStrLn(show (findShortestPath (findAllIntersectingPoints segList1 segList2)))
         else do
             putStrLn "Usage: ./day input.txt (p1|p2|both)"
             exitSuccess
