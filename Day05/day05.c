@@ -11,7 +11,7 @@
 
 int g_output = 0;
 
-void run_intcode(int *insts, int insts_size) {
+void run_intcode(int *insts, int insts_size, int input_val) {
   int pc = 0;
 
 #if DEBUG_PRINT
@@ -67,7 +67,7 @@ void run_intcode(int *insts, int insts_size) {
                 break;
               }
       case 3: {
-                insts[insts[pc + 1]] = 1;
+                insts[insts[pc + 1]] = input_val;
                 pc += 2;
                 break;
               }
@@ -75,6 +75,40 @@ void run_intcode(int *insts, int insts_size) {
                 //g_output = insts[insts[pc + 1]];
                 g_output = param1;
                 pc += 2;
+                break;
+               }
+      case 5: {
+                if(param1 != 0) {
+                  pc = param2;
+                } else {
+                  pc+=3;
+                }
+                break;
+               }
+      case 6: {
+                if(param1 == 0) {
+                  pc = param2;
+                } else {
+                  pc+=3;
+                }
+                break;
+               }
+      case 7: {
+                if(param1 < param2) {
+                  insts[insts[pc + 3]] = 1;
+                } else {
+                  insts[insts[pc + 3]] = 0;
+                }
+                pc += 4;
+                break;
+               }
+      case 8: {
+                if(param1 == param2) {
+                  insts[insts[pc + 3]] = 1;
+                } else {
+                  insts[insts[pc + 3]] = 0;
+                }
+                pc += 4;
                 break;
                }
       default: {
@@ -89,7 +123,7 @@ void part1(int *insts, int insts_size) {
    int *initial_state = (int *)malloc(sizeof(int) * insts_size);
    memcpy(initial_state, insts, sizeof(int) * insts_size);
 
-   run_intcode(initial_state, insts_size);
+   run_intcode(initial_state, insts_size, 1);
    printf("PART1: %d\n", g_output);
    if(initial_state) {
      free(initial_state);
@@ -100,11 +134,11 @@ void part2(int *insts, int insts_size) {
   int *initial_state = (int *) malloc(sizeof(int) * insts_size);
   memcpy(initial_state, insts, sizeof(int) * insts_size);
 
+  run_intcode(initial_state, insts_size, 5);
+  printf("PART2: %d\n", g_output);
   if(initial_state) {
     free(initial_state);
   }
-
-  printf("PART2: %d\n", 0);
 }
 
 void split_line(char *line, int **arr, int *arr_size) {
@@ -156,7 +190,7 @@ int main(int argc, char *argv[]) {
     int insts_size;
     if(SUCCESS == parse_file(argv[1], &insts, &insts_size)) {
       part1(insts, insts_size);
-      //part2(insts, insts_size);
+      part2(insts, insts_size);
       if(insts) {
         free(insts);
         insts = NULL;
