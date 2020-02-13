@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <math.h>
+
 #define DEBUG_PRINT 0
 
 #define FAILURE -1
@@ -14,6 +16,23 @@ void print_as_num(int *sig, int sig_size) {
   for(int i = 0; i < sig_size; i++) {
     printf("%d", sig[i]);
   }
+}
+
+void print_as_num_off(int *sig, int sig_size, int offset) {
+  for(int i = offset; i < offset + sig_size; i++) {
+    printf("%d", sig[i]);
+  }
+}
+
+int get_start_index(int *sig) {
+  int offset = 0;
+
+  for(int i = 6; i >=0; i--) {
+    int exp = 6 - i;
+    offset += sig[i] * (int)pow(10.0, (double)exp);
+  }
+
+  return offset;
 }
 
 void part1(int *sig_init, int sig_size) {
@@ -45,7 +64,7 @@ void part1(int *sig_init, int sig_size) {
 
     for(int i = 0; i < sig_size; i++) {
       int sum = 0;
-      for(int j = 0; j < sig_size; j++) {
+      for(int j = i; j < sig_size; j++) {
         int index = (i + 2 + j)/(i + 1) - 1;
         sum += sig[j] * pattern[index % 4];
       }
@@ -61,13 +80,60 @@ void part1(int *sig_init, int sig_size) {
     temp = NULL;
   }
 
+  //print_as_num(sig, sig_size);
+  printf("\n");
   printf("PART1: ");
   print_as_num(sig, 8);
   printf("\n");
+
+  if(sig) {
+    free(sig);
+    sig = NULL;
+  }
 }
 
-void part2(int *modules, int modules_size) {
-  printf("PART2: %d\n", 0);
+void part2(int *sig_init, int sig_size) {
+  int *sig = (int *) malloc(sizeof(int) * sig_size * 10000);
+
+  for(int i = 0; i < 10000; i++) {
+     memcpy(sig + i * sig_size, sig_init, sizeof(int) * sig_size);
+  }
+
+  int offset = get_start_index(sig_init);
+
+  #if DEBUG_PRINT
+  for(int i = 0; i < sig_size; i++) {
+    printf("sig[%d]=%d\n", i, sig[i]);
+  }
+  #endif
+
+  int phase = 0;
+
+  while(1) {
+    #if DEBUG_PRINT
+    printf("phase %d: ", phase);
+    print_as_num(sig, sig_size);
+    printf("\n");
+    #endif
+
+    if(phase >= NUM_PHASES) {
+      break;
+    }
+
+    for(int i = sig_size * 10000 - 2; i >= 0; i--) {
+      sig[i] = (sig[i] + sig[i + 1]) % 10;
+    }
+    phase++;
+  }
+
+  printf("PART2: ");
+  print_as_num_off(sig, 8, offset);
+  printf("\n");
+
+  if(sig) {
+    free(sig);
+    sig = NULL;
+  }
 }
 
 int parse_file(char *file_name, int **arr, int *arr_size) {
@@ -121,8 +187,8 @@ int main(int argc, char *argv[]) {
     int *sig;
     int sig_size;
     if(SUCCESS == parse_file(argv[1], &sig, &sig_size)) {
-      part1(sig , sig_size);
-      //part2(modules, modules_size);
+      //part1(sig , sig_size);
+      part2(sig , sig_size);
       if(sig) {
         free(sig);
         sig = NULL;
