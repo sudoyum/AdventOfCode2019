@@ -142,27 +142,27 @@ int g_phase_index = 0;
 
 void swap(int *a, int *b)
 {
-    int temp;
-    temp = *a;
-    *a = *b;
-    *b = temp;
+  int temp;
+  temp = *a;
+  *a = *b;
+  *b = temp;
 }
 
 //permutation function
 void permutation(int *arr, int start, int end)
 {
-    if(start==end)
-    {
-        memcpy(g_phases[g_phase_index++], arr, sizeof(int) * 5);
-        return;
-    }
-    int i;
-    for(i=start;i<=end;i++)
-    {
-        swap((arr+i), (arr+start));
-        permutation(arr, start+1, end);
-        swap((arr+i), (arr+start));
-    }
+  if(start == end)
+  {
+    memcpy(g_phases[g_phase_index++], arr, sizeof(int) * 5);
+    return;
+  }
+
+  for(int i = start;i <= end; i++)
+  {
+    swap((arr + i), (arr + start));
+    permutation(arr, start + 1, end);
+    swap((arr + i), (arr + start));
+  }
 }
 
 IntCode_t *init_intcode(char id, int *insts, int insts_size) {
