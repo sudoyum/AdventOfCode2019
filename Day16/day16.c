@@ -80,8 +80,6 @@ void part1(int *sig_init, int sig_size) {
     temp = NULL;
   }
 
-  //print_as_num(sig, sig_size);
-  printf("\n");
   printf("PART1: ");
   print_as_num(sig, 8);
   printf("\n");
@@ -187,7 +185,7 @@ int main(int argc, char *argv[]) {
     int *sig;
     int sig_size;
     if(SUCCESS == parse_file(argv[1], &sig, &sig_size)) {
-      //part1(sig , sig_size);
+      part1(sig , sig_size);
       part2(sig , sig_size);
       if(sig) {
         free(sig);
