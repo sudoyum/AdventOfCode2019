@@ -46,6 +46,11 @@ int parse_file(char *file_name, int ***arr, int *x_max, int *y_max) {
     plane[line_num++] = row;
   }
 
+  if(line) {
+    free(line);
+    line = NULL;
+  }
+
   *arr = plane;
   *y_max = line_num;
 
